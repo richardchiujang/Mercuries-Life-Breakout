@@ -33,6 +33,16 @@ export interface Brick extends Position {
   color: string;
   isFlashy: boolean;
   flashOffset: number;
+  originalX: number; // For movement calculation
+  productName: string; // The specific insurance product
+}
+
+export interface FloatingText extends Position {
+  text: string;
+  color: string;
+  life: number; // 1.0 to 0.0
+  dy: number;
+  scale: number;
 }
 
 export enum DropType {

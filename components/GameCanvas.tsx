@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { GameState, Ball, Paddle, Brick, Particle, Drop, DropType } from '../types';
-import { CONFIG, THEME, LOGO_URL } from '../constants';
+import { GameState, Ball, Paddle, Brick, Particle, Drop, DropType, FloatingText } from '../types';
+import { CONFIG, THEME, LOGO_URL, MLI_PRODUCTS } from '../constants';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -30,6 +30,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const bricksRef = useRef<Brick[]>([]);
   const particlesRef = useRef<Particle[]>([]);
   const dropsRef = useRef<Drop[]>([]);
+  const floatingTextsRef = useRef<FloatingText[]>([]);
   const logoImgRef = useRef<HTMLImageElement | null>(null);
   
   const [isMobile, setIsMobile] = useState(false);
@@ -73,26 +74,32 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     for (let c = 0; c < brickColumnCount; c++) {
       for (let r = 0; r < brickRowCount; r++) {
         const x = (c * (brickWidth + brickPadding)) + brickPadding;
-        const y = (r * (25 + brickPadding)) + brickOffsetTop;
+        const y = (r * (30 + brickPadding)) + brickOffsetTop; // Increased height slightly for text
         
-        // 20% chance to be a "Flashy" brick (Special Bonus)
-        const isFlashy = Math.random() < 0.2;
+        // Assign a random MLI product to this brick
+        const product = MLI_PRODUCTS[Math.floor(Math.random() * MLI_PRODUCTS.length)];
+        
+        // 15% chance to be "Flashy" (Bonus)
+        const isFlashy = Math.random() < 0.15;
         
         newBricks.push({
           x,
           y,
+          originalX: x, // Store original X for movement calculation
           width: brickWidth,
           height: 25,
           status: 1,
-          color: isFlashy ? THEME.accent : THEME.primary,
+          color: isFlashy ? THEME.accent : product.color,
           isFlashy,
-          flashOffset: Math.random() * 100
+          flashOffset: Math.random() * 100,
+          productName: product.name
         });
       }
     }
     bricksRef.current = newBricks;
     particlesRef.current = [];
     dropsRef.current = [];
+    floatingTextsRef.current = [];
   }, []);
 
   // Reset game when entering PLAYING state
@@ -148,6 +155,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const ball = ballRef.current;
     const paddle = paddleRef.current;
     const { canvasWidth, canvasHeight } = CONFIG;
+    const time = Date.now() / 1000;
+
+    // --- Update Brick Positions (Moving Bricks) ---
+    bricksRef.current.forEach((brick, index) => {
+      if (brick.status === 1) {
+         // Alternate direction based on row index (calculated roughly from Y)
+         const rowIndex = Math.floor((brick.y - CONFIG.brickOffsetTop) / (30 + CONFIG.brickPadding));
+         const direction = rowIndex % 2 === 0 ? 1 : -1;
+         // Sine wave movement
+         const offset = Math.sin(time * 2) * 20 * direction;
+         brick.x = brick.originalX + offset;
+      }
+    });
 
     // --- Auto Mode Logic ---
     if (autoMode && ball.active) {
@@ -227,6 +247,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           const points = brick.isFlashy ? 50 : 10;
           setScore(prev => prev + points);
 
+          // Spawn Floating Text (Product Name)
+          floatingTextsRef.current.push({
+              x: brick.x + brick.width/2,
+              y: brick.y,
+              text: brick.productName,
+              color: brick.color,
+              life: 1.0,
+              dy: -1.5,
+              scale: 1.0
+          });
+
           // Spawn Particles
           for(let i=0; i<8; i++) {
             particlesRef.current.push({
@@ -282,8 +313,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                     setLives(prev => Math.min(prev + 1, 5)); // Max 5 lives
                     // Visual feedback
                     particlesRef.current.push({ x: drop.x, y: drop.y, dx: 0, dy: -1, life: 1, size: 8, color: '#ff0000' });
+                    floatingTextsRef.current.push({ x: drop.x, y: drop.y, text: "❤️ +1 Life", color: '#ff0000', life: 1.0, dy: -2, scale: 1.2 });
                 } else {
                     setScore(prev => prev + 100); // Big points for contracts
+                    floatingTextsRef.current.push({ x: drop.x, y: drop.y, text: "📑 保單GET!", color: '#FFD700', life: 1.0, dy: -2, scale: 1.2 });
                     // Gold particles for contracts
                     for(let i=0; i<5; i++) {
                        particlesRef.current.push({ 
@@ -314,6 +347,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         p.life -= 0.02;
     });
     particlesRef.current = particlesRef.current.filter(p => p.life > 0);
+
+    // --- Floating Text Update ---
+    floatingTextsRef.current.forEach(ft => {
+        ft.y += ft.dy;
+        ft.life -= 0.015;
+        ft.scale += 0.01;
+    });
+    floatingTextsRef.current = floatingTextsRef.current.filter(ft => ft.life > 0);
 
   }, [gameState, autoMode, setLives, setScore, onGameOver]);
 
@@ -410,6 +451,28 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         }
         ctx.restore();
     });
+
+    // Draw Floating Texts (Product Names)
+    floatingTextsRef.current.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = ft.life;
+        ctx.translate(ft.x, ft.y);
+        ctx.scale(ft.scale, ft.scale);
+        
+        // Outline
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.font = "bold 14px 'Noto Sans TC', sans-serif";
+        ctx.textAlign = "center";
+        ctx.strokeText(ft.text, 0, 0);
+        
+        // Fill
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, 0, 0);
+        
+        ctx.restore();
+    });
+    ctx.globalAlpha = 1.0;
 
     // Draw Paddle
     ctx.beginPath();

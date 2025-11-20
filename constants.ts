@@ -8,6 +8,15 @@ export const THEME = {
   background: '#111111',
 };
 
+// Specific MLI Product Categories found on their website
+export const MLI_PRODUCTS = [
+  { name: "祥安終身壽險", color: '#E3001B' }, // Red (Signature)
+  { name: "世紀安康醫療", color: '#00C853' }, // Green (Health)
+  { name: "GO福氣投保", color: '#FFD700' },   // Gold (Investment/Wealth)
+  { name: "平安旅行險", color: '#2979FF' },   // Blue (Travel)
+  { name: "守護防癌險", color: '#AA00FF' },   // Purple (Critical Care)
+];
+
 // Dynamically calculate safe dimensions based on window
 const isMobile = window.innerWidth < 768;
 const canvasWidth = Math.min(window.innerWidth - 20, 800);
@@ -20,7 +29,7 @@ export const CONFIG: GameConfig = {
   paddleHeight: 20,
   ballRadius: 8,
   brickRowCount: 6,
-  brickColumnCount: isMobile ? 6 : 10,
+  brickColumnCount: isMobile ? 6 : 8, // Reduced slightly for better text visibility
   brickPadding: 10,
   brickOffsetTop: 60,
 };
@@ -53,5 +62,6 @@ export const INSURANCE_TIPS = [
   "每一份保單都是一份承諾。 (Every policy is a promise.)",
   "風險無所不在，三商美邦與你同在。 (Risk is everywhere, Mercuries is with you.)",
   "為家人多想一點，保障就多一點。 (Think more for family, protect more.)",
-  "投資型保單，兼顧保障與理財。 (Investment-linked policies cover protection and finance.)"
+  "投資型保單，兼顧保障與理財。 (Investment-linked policies cover protection and finance.)",
+  "線上投保 GO福氣，方便又快速！ (Online insurance is fast and easy!)"
 ];
