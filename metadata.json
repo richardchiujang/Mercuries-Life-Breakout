@@ -1,0 +1,5 @@
+{
+  "name": "Mercuries Life Breakout",
+  "description": "A custom breakout game themed for Mercuries Life Insurance featuring auto-play, shiny bricks, and collectible insurance contracts.",
+  "requestFramePermissions": []
+}
